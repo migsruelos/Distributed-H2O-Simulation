@@ -236,6 +236,9 @@ public:
             WSACleanup();
             return;
         }
+
+        cout << "Server Listening on " << RECEIVING_IP << ":" << RECEIVING_PORT << endl;
+        start();
     }
 
     ~Server() {
@@ -247,6 +250,8 @@ public:
     }
 
     void start() {
+        //Split off thread that checks for bond requests
+
         while (true) {
             // accept client connection
             SOCKET clientSocket = accept(serverSocket, NULL, NULL);
@@ -378,19 +383,13 @@ int main() {
 
     //If server, ask IP and PORT
     else if(inputStr == "S" || inputStr == "s"){
-        Server server;
-
         cout << "IP: ";
         cin >> RECEIVING_IP;
         cout << "PORT: ";
         cin >> RECEIVING_PORT;
 
-        server.start();
+        Server server;
     }
     
     return 0;
-    
-    
-    int hydrogenCount = 5; // num of Hydrogen molecules
-    int oxygenCount = 2;   // num of Oxygen molecules
 }
