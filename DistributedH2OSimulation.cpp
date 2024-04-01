@@ -47,6 +47,10 @@ public:
         getline(ss, timestamp, ',');
         return BondRequest(id, type, status, timestamp);
     }
+
+    void log(){
+        cout << "(" << type << id << ", " << status << ", " << timestamp << ")\n";
+    }
 };
 
 // Class to represent both hydrogen and oxygen client
@@ -119,7 +123,8 @@ public:
             send(clientSocket, serializedRequest.c_str(), serializedRequest.size(), 0);
 
             //Log request
-            cout << "(" << request.type << request.id << ", request, " << request.timestamp << ")\n";
+            request.log();
+
             this_thread::sleep_for(chrono::milliseconds(100)); // delay
         }
         
@@ -181,7 +186,8 @@ public:
         send(clientSocket, serializedRequest.c_str(), serializedRequest.size(), 0);
 
         //Log request
-        cout << "(" << request.type << request.id << ", request, " << request.timestamp << ")\n";
+        request.log();
+
         this_thread::sleep_for(chrono::milliseconds(100)); // delay
     }
 
@@ -284,7 +290,7 @@ public:
             BondRequest request = BondRequest::deserialize(data);
 
             //Log request
-            cout << "(" << request.type << request.id << ", request, " << request.timestamp << ")\n";
+            request.log();
 
             
             if (request.type == "H") {
