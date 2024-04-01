@@ -49,7 +49,7 @@ public:
     }
 
     void log(){
-        cout << "(" << type << id << ", " << status << ", " << timestamp << ")\n";
+        cout << "(" << id << ", " << status << ", " << timestamp << ")\n";
     }
 };
 
@@ -76,7 +76,7 @@ public:
     HydrogenClient(int count) : Client("H", count) {}
 
     void sendRequests() override {
-        
+        cout << "H-Client starting...\n";
         WSADATA wsaData;
         int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (iResult != 0) {
@@ -139,7 +139,7 @@ public:
     OxygenClient(int count) : Client("O", count) {}
 
     void sendRequests() override {
-   
+    cout << "O-Client starting...\n";
     WSADATA wsaData;
     int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (iResult != 0) {
@@ -382,11 +382,11 @@ int main() {
         cout << "SERVER PORT: ";
         cin >> SENDING_PORT;
 
-        if(inputStr == "O" || "o"){
+        if(inputStr == "O" || inputStr == "o"){
             OxygenClient oxygenClient(inputInt);
             oxygenClient.sendRequests();
         }
-        else if(inputStr == "H" || "h"){
+        else if(inputStr == "H" || inputStr == "h"){
             HydrogenClient hydrogenClient(inputInt);
             hydrogenClient.sendRequests();
         }
