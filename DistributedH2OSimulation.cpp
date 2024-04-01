@@ -63,13 +63,50 @@ protected:
 public:
     Client(string type, int count) : type(type), count(count) {}
 
-    virtual ~Client() {
+    ~Client() {
         closesocket(clientSocket);
         WSACleanup();
     }
 
-    void receiveResponses(){
+    static void receiveResponses(){
+        SOCKET serverSocket;
+
+        WSADATA wsaData;
+        int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
+        if (iResult != 0) {
+            cout << "WSAStartup failed: " << iResult << endl;
+            return;
+        }
+
         
+        serverSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (serverSocket == INVALID_SOCKET) {
+            cout << "Error creating socket: " << WSAGetLastError() << endl;
+            WSACleanup();
+            return;
+        }
+
+        // bind socket
+        sockaddr_in serverAddr;
+        serverAddr.sin_family = AF_INET;
+        serverAddr.sin_addr.s_addr = inet_addr(RECEIVING_IP.c_str());
+        serverAddr.sin_port = htons(RECEIVING_PORT);
+        if (bind(serverSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
+            cout << "Bind failed with error: " << WSAGetLastError() << endl;
+            closesocket(serverSocket);
+            WSACleanup();
+            return;
+        }
+
+        // listen for connections
+        if (listen(serverSocket, SOMAXCONN) == SOCKET_ERROR) {
+            cout << "Listen failed with error: " << WSAGetLastError() << endl;
+            closesocket(serverSocket);
+            WSACleanup();
+            return;
+        }
+
+        cout << "Client waiting for responses on " << RECEIVING_IP << ":" << RECEIVING_PORT << endl;
     }
 
     void sendRequests(){
@@ -137,7 +174,8 @@ class Server {
 private:
     SOCKET serverSocket;
     vector<SOCKET> clientSockets;
-    vector<SOCKET> responseSockets;
+    SOCKET hSocket;
+    SOCKET oSocket;
     mutex mtx;
     condition_variable cv;
     vector<BondRequest> hydrogenRequests;
@@ -213,7 +251,7 @@ public:
             thread clientThread(&Server::handleClient, this, clientSocket);
             clientThread.detach();
 
-            //TODO: Get IP and port of client response sockets
+            //TODO: Get IP, client type, and port of client response socket
 
             //TODO: Create and connect to response socket using information
         }
@@ -247,7 +285,7 @@ public:
 
         // if recv returns 0, the client disconnected gracefully
         if (bytesReceived == 0) {
-            cout << "Client disconnected" << endl;
+            cout << "Client requests received!" << endl;
         } else if (bytesReceived == SOCKET_ERROR) {
             cout << "recv failed with error: " << WSAGetLastError() << endl;
         }
@@ -329,8 +367,11 @@ int main() {
             type = "H";
 
         Client client(type, inputInt);
-        //TODO: Run confirmation listener function in another thread
+        //Run confirmation listener function in another thread
+        thread responseThread(Client::receiveResponses);
+        responseThread.detach();
         client.sendRequests();
+        while(true); //Block so that the server part can listen
     }
 
     //If server, ask IP and PORT
