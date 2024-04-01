@@ -326,30 +326,71 @@ public:
 };
 
 int main() {
-    Server server;
+    string inputStr;
+    int inputInt;
+
+    //Ask if the program will run a client or a server
+    while(true){
+        cout << "Client(C) or Server(S)?: " ;
+        cin >> inputStr;
+        if(inputStr != "C" && inputStr != "S" &&
+        inputStr != "c" && inputStr != "s")
+            cout << "Invalid Input\n";
+        else break;
+    }
+
+    //If client, what kind?
+    if(inputStr == "C" || inputStr == "c"){
+        while(true){
+            cout << "Oxygen(O) or Hydrogen(H)?: ";
+            cin >> inputStr;
+            if(inputStr != "O" && inputStr != "o" &&
+            inputStr != "H" && inputStr != "h")
+                cout << "Invalid Input\n";
+            else break;
+        }
+
+        //How many requests
+        cout << "How many requests?: ";
+        cin >> inputInt;
+
+        //Client IP and PORT
+        cout << "CLIENT IP: ";
+        cin >> RECEIVING_IP;
+        cout << "CLIENT PORT: ";
+        cin >> RECEIVING_PORT;
+        
+        //Server IP and PORT
+        cout << "SERVER IP: ";
+        cin >> SENDING_IP;
+        cout << "SERVER PORT: ";
+        cin >> SENDING_PORT;
+
+        if(inputStr == "O" || "o"){
+            OxygenClient oxygenClient(inputInt);
+            oxygenClient.sendRequests();
+        }
+        else if(inputStr == "H" || "h"){
+            HydrogenClient hydrogenClient(inputInt);
+            hydrogenClient.sendRequests();
+        }
+    }
+
+    //If server, ask IP and PORT
+    else if(inputStr == "S" || inputStr == "s"){
+        Server server;
+
+        cout << "IP: ";
+        cin >> RECEIVING_IP;
+        cout << "PORT: ";
+        cin >> RECEIVING_PORT;
+
+        server.start();
+    }
+    
+    return 0;
+    
+    
     int hydrogenCount = 5; // num of Hydrogen molecules
     int oxygenCount = 2;   // num of Oxygen molecules
-
-    // Start server in a separate thread
-    thread serverThread(&Server::start, &server);
-
-    // Create threads for Hydrogen and Oxygen clients
-    thread hydrogenThread([&] {
-        HydrogenClient hydrogenClient(hydrogenCount);
-        hydrogenClient.sendRequests();
-    });
-
-    thread oxygenThread([&] {
-        OxygenClient oxygenClient(oxygenCount);
-        oxygenClient.sendRequests();
-    });
-
-    // Join threads
-    hydrogenThread.join();
-    oxygenThread.join();
-
-    // Join server thread
-    serverThread.join();
-
-    return 0;
 }
