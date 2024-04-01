@@ -68,15 +68,12 @@ public:
         WSACleanup();
     }
 
-    virtual void sendRequests() = 0;
-};
+    void receiveResponses(){
+        
+    }
 
-class HydrogenClient : public Client {
-public:
-    HydrogenClient(int count) : Client("H", count) {}
-
-    void sendRequests() override {
-        cout << "H-Client starting...\n";
+    void sendRequests(){
+        cout << type <<"-Client starting...\n";
         WSADATA wsaData;
         int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (iResult != 0) {
@@ -105,7 +102,9 @@ public:
             return;
         }
 
-        // Send bond requests
+        //TODO: Send IP and Port of server socket
+
+        //Send bond requests
         for (int i = 1; i <= count; ++i) {
             stringstream ss;
             ss << type << i;
@@ -125,7 +124,7 @@ public:
             //Log request
             request.log();
 
-            this_thread::sleep_for(chrono::milliseconds(100)); // delay
+            this_thread::sleep_for(chrono::milliseconds(10)); // delay
         }
         
         closesocket(clientSocket);
@@ -133,75 +132,12 @@ public:
     }
 };
 
-
-class OxygenClient : public Client {
-public:
-    OxygenClient(int count) : Client("O", count) {}
-
-    void sendRequests() override {
-    cout << "O-Client starting...\n";
-    WSADATA wsaData;
-    int iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-    if (iResult != 0) {
-        cout << "WSAStartup failed: " << iResult << endl;
-        return;
-    }
-
-  
-    SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (clientSocket == INVALID_SOCKET) {
-        cout << "Error creating socket: " << WSAGetLastError() << endl;
-        WSACleanup();
-        return;
-    }
-
-    
-    sockaddr_in serverAddr;
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr(SENDING_IP.c_str());
-    serverAddr.sin_port = htons(SENDING_PORT);
-
-    if (connect(clientSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
-        cout << "Unable to connect to server: " << WSAGetLastError() << endl;
-        closesocket(clientSocket);
-        WSACleanup();
-        return;
-    }
-
-    // Send bond requests
-    for (int i = 1; i <= count; ++i) {
-        stringstream ss;
-        ss << type << i;
-        string id = ss.str();
-        auto timestamp = chrono::system_clock::now();
-        std::time_t now_c = chrono::system_clock::to_time_t(timestamp);
-        std::tm * ptm = std::localtime(&now_c);
-        char buffer[20]; // assuming timestamp will fit within 20 characters
-        std::strftime(buffer, 20, "%Y-%m-%d %H:%M:%S", ptm);
-        string timestampStr = buffer;
-        BondRequest request(id, type, "request", timestampStr);
-        string serializedRequest = request.serialize();
-
-        
-        send(clientSocket, serializedRequest.c_str(), serializedRequest.size(), 0);
-
-        //Log request
-        request.log();
-
-        this_thread::sleep_for(chrono::milliseconds(100)); // delay
-    }
-
-    
-    closesocket(clientSocket);
-    WSACleanup();
-}
-};
-
 // Server class
 class Server {
 private:
     SOCKET serverSocket;
     vector<SOCKET> clientSockets;
+    vector<SOCKET> responseSockets;
     mutex mtx;
     condition_variable cv;
     vector<BondRequest> hydrogenRequests;
@@ -276,6 +212,10 @@ public:
             
             thread clientThread(&Server::handleClient, this, clientSocket);
             clientThread.detach();
+
+            //TODO: Get IP and port of client response sockets
+
+            //TODO: Create and connect to response socket using information
         }
     }
 
@@ -382,14 +322,15 @@ int main() {
         cout << "SERVER PORT: ";
         cin >> SENDING_PORT;
 
-        if(inputStr == "O" || inputStr == "o"){
-            OxygenClient oxygenClient(inputInt);
-            oxygenClient.sendRequests();
-        }
-        else if(inputStr == "H" || inputStr == "h"){
-            HydrogenClient hydrogenClient(inputInt);
-            hydrogenClient.sendRequests();
-        }
+        string type;
+        if(inputStr == "O" || inputStr == "o")
+            type = "O";
+        else if(inputStr == "H" || inputStr == "h")
+            type = "H";
+
+        Client client(type, inputInt);
+        //TODO: Run confirmation listener function in another thread
+        client.sendRequests();
     }
 
     //If server, ask IP and PORT
