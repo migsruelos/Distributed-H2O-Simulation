@@ -118,7 +118,8 @@ public:
             
             send(clientSocket, serializedRequest.c_str(), serializedRequest.size(), 0);
 
-            cout << "Sending request: " << request.id << endl;
+            //Log request
+            cout << "(" << request.type << request.id << ", request, " << request.timestamp << ")\n";
             this_thread::sleep_for(chrono::milliseconds(100)); // delay
         }
         
@@ -179,7 +180,8 @@ public:
         
         send(clientSocket, serializedRequest.c_str(), serializedRequest.size(), 0);
 
-        cout << "Sending request: " << request.id << endl;
+        //Log request
+        cout << "(" << request.type << request.id << ", request, " << request.timestamp << ")\n";
         this_thread::sleep_for(chrono::milliseconds(100)); // delay
     }
 
@@ -280,6 +282,9 @@ public:
 
            
             BondRequest request = BondRequest::deserialize(data);
+
+            //Log request
+            cout << "(" << request.type << request.id << ", request, " << request.timestamp << ")\n";
 
             
             if (request.type == "H") {
