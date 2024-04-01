@@ -13,8 +13,11 @@
 
 using namespace std;
 
-const int DEFAULT_PORT = 27015;
-const char* SERVER_IP = "127.0.0.1";
+//DEFAULT VALUES
+int RECEIVING_PORT = 27020;
+string RECEIVING_IP = "127.0.0.2";
+int SENDING_PORT = 27015;
+string SENDING_IP = "127.0.0.1";
 
 // Class to represent a bond request
 class BondRequest {
@@ -88,8 +91,8 @@ public:
         
         sockaddr_in serverAddr;
         serverAddr.sin_family = AF_INET;
-        serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP);
-        serverAddr.sin_port = htons(DEFAULT_PORT);
+        serverAddr.sin_addr.s_addr = inet_addr(SENDING_IP.c_str());
+        serverAddr.sin_port = htons(SENDING_PORT);
 
         if (connect(clientSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
             cout << "Unable to connect to server: " << WSAGetLastError() << endl;
@@ -149,8 +152,8 @@ public:
     
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr = inet_addr(SERVER_IP);
-    serverAddr.sin_port = htons(DEFAULT_PORT);
+    serverAddr.sin_addr.s_addr = inet_addr(SENDING_IP.c_str());
+    serverAddr.sin_port = htons(SENDING_PORT);
 
     if (connect(clientSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
         cout << "Unable to connect to server: " << WSAGetLastError() << endl;
@@ -217,8 +220,8 @@ public:
         // bind socket
         sockaddr_in serverAddr;
         serverAddr.sin_family = AF_INET;
-        serverAddr.sin_addr.s_addr = INADDR_ANY;
-        serverAddr.sin_port = htons(DEFAULT_PORT);
+        serverAddr.sin_addr.s_addr = inet_addr(RECEIVING_IP.c_str());
+        serverAddr.sin_port = htons(RECEIVING_PORT);
         if (bind(serverSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
             cout << "Bind failed with error: " << WSAGetLastError() << endl;
             closesocket(serverSocket);
