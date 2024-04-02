@@ -383,6 +383,7 @@ public:
             hydrogen1.log();
             confirm = hydrogen1.serialize();
             send(hSocket, confirm.c_str(), confirm.size(), 0);
+            this_thread::sleep_for(chrono::milliseconds(10)); // delay
 
             auto hydrogen2 = hydrogenRequests.back();
             hydrogenRequests.pop_back();
@@ -392,6 +393,7 @@ public:
             hydrogen2.log();
             confirm = hydrogen2.serialize();
             send(hSocket, confirm.c_str(), confirm.size(), 0);
+            this_thread::sleep_for(chrono::milliseconds(10)); // delay
 
             auto oxygen = oxygenRequests.back();
             oxygenRequests.pop_back();
@@ -401,6 +403,7 @@ public:
             oxygen.log();
             confirm = oxygen.serialize();
             send(oSocket, confirm.c_str(), confirm.size(), 0);
+            this_thread::sleep_for(chrono::milliseconds(10)); // delay
         } 
     }
 };
