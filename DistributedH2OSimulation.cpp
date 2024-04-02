@@ -139,7 +139,9 @@ public:
             return;
         }
 
-        //TODO: Send IP and Port of server socket
+        //Send client type and IP and Port of server socket
+        string information = type + " " + RECEIVING_IP + " " + to_string(RECEIVING_PORT);
+        send(clientSocket, information.c_str(), information.size(), 0);
 
         //Send bond requests
         for (int i = 1; i <= count; ++i) {
@@ -174,8 +176,8 @@ class Server {
 private:
     SOCKET serverSocket;
     vector<SOCKET> clientSockets;
-    SOCKET hSocket;
-    SOCKET oSocket;
+    SOCKET hSocket = INVALID_SOCKET;
+    SOCKET oSocket = INVALID_SOCKET;
     mutex mtx;
     condition_variable cv;
     vector<BondRequest> hydrogenRequests;
@@ -232,6 +234,13 @@ public:
     }
 
     void start() {
+        char buffer[1024];
+        stringstream ss;
+        string TYPE;
+        string IP;
+        int PORT;
+        sockaddr_in serverAddr;
+
         //Split off thread that checks for bond requests
 
         while (true) {
@@ -244,16 +253,48 @@ public:
                 return;
             }
 
+            //Get client type, IP, and port of client response socket
+            recv(clientSocket, buffer, sizeof(buffer), 0);
+            ss = stringstream(buffer);
+            ss >> TYPE;
+            ss >> IP;
+            ss >> PORT;
+
+            //Create and connect to response socket using information
+            serverAddr.sin_family = AF_INET;
+            serverAddr.sin_addr.s_addr = inet_addr(IP.c_str());
+            serverAddr.sin_port = htons(PORT);
+            if(TYPE == "H"){
+                hSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+                if (hSocket == INVALID_SOCKET) {
+                    cout << "Error creating hSocket: " << WSAGetLastError() << endl;
+                    continue;
+                }
+                if (connect(hSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
+                    cout << "Unable to connect to H-Client: " << WSAGetLastError() << endl;
+                    closesocket(hSocket);
+                    continue;;
+                }
+                cout << "Connected to H-Client!\n";//Connection success
+            }        
+            else if(TYPE == "O"){
+                oSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+                if (oSocket == INVALID_SOCKET) {
+                    cout << "Error creating oSocket: " << WSAGetLastError() << endl;
+                    continue;
+                }
+                if (connect(oSocket, reinterpret_cast<sockaddr*>(&serverAddr), sizeof(serverAddr)) == SOCKET_ERROR) {
+                    cout << "Unable to connect to O-Client: " << WSAGetLastError() << endl;
+                    closesocket(oSocket);
+                    continue;;
+                }
+                cout << "Connected to O-Client!\n";//Connection success
+            }      
             
             clientSockets.push_back(clientSocket);
-
             
             thread clientThread(&Server::handleClient, this, clientSocket);
             clientThread.detach();
-
-            //TODO: Get IP, client type, and port of client response socket
-
-            //TODO: Create and connect to response socket using information
         }
     }
 
