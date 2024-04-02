@@ -188,7 +188,7 @@ public:
             //Log request
             request.log();
 
-            this_thread::sleep_for(chrono::milliseconds(10)); // delay
+            this_thread::sleep_for(chrono::milliseconds(100)); // delay
         }
     }
 };
