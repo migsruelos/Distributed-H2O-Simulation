@@ -68,7 +68,7 @@ public:
         WSACleanup();
     }
 
-    static void receiveResponses(){
+    void receiveResponses(){
         SOCKET serverSocket;
 
         WSADATA wsaData;
@@ -242,6 +242,8 @@ public:
         sockaddr_in serverAddr;
 
         //Split off thread that checks for bond requests
+        thread bondThread(&Server::bond, this);
+        bondThread.detach();
 
         while (true) {
             // accept client connection
@@ -343,20 +345,22 @@ public:
     }
 
     void bond() {
-        unique_lock<mutex> lock(mtx);
-        cv.wait(lock, [this] {
-            return hydrogenRequests.size() >= 2 && oxygenRequests.size() >= 1;
-        });
+        while(true){
+            unique_lock<mutex> lock(mtx);
+            cv.wait(lock, [this] {
+                return hydrogenRequests.size() >= 2 && oxygenRequests.size() >= 1;
+            });
 
-        // bonding
-        auto hydrogen1 = hydrogenRequests.back();
-        hydrogenRequests.pop_back();
-        auto hydrogen2 = hydrogenRequests.back();
-        hydrogenRequests.pop_back();
-        auto oxygen = oxygenRequests.back();
-        oxygenRequests.pop_back();
+            // bonding
+            auto hydrogen1 = hydrogenRequests.back();
+            hydrogenRequests.pop_back();
+            auto hydrogen2 = hydrogenRequests.back();
+            hydrogenRequests.pop_back();
+            auto oxygen = oxygenRequests.back();
+            oxygenRequests.pop_back();
 
-        cout << "Bonded: " << hydrogen1.id << ", " << hydrogen2.id << ", " << oxygen.id << endl;
+            cout << "Bonded: " << hydrogen1.id << ", " << hydrogen2.id << ", " << oxygen.id << endl;
+        } 
     }
 };
 
@@ -409,7 +413,7 @@ int main() {
 
         Client client(type, inputInt);
         //Run confirmation listener function in another thread
-        thread responseThread(Client::receiveResponses);
+        thread responseThread(&Client::receiveResponses, client);
         responseThread.detach();
         client.sendRequests();
         while(true); //Block so that the server part can listen
