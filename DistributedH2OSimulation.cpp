@@ -106,7 +106,32 @@ public:
             return;
         }
 
-        cout << "Client waiting for responses on " << RECEIVING_IP << ":" << RECEIVING_PORT << endl;
+        cout << "Client waiting for bond confirmations on " << RECEIVING_IP << ":" << RECEIVING_PORT << endl;
+
+        //Accept connections
+        while(true){
+            SOCKET responseSocket = accept(serverSocket, NULL, NULL);
+            if (responseSocket == INVALID_SOCKET) {
+                cout << "Accept failed with error: " << WSAGetLastError() << endl;
+                closesocket(serverSocket);
+                WSACleanup();
+                return;
+            }
+
+            //Receive confirmations
+            char buffer[1024];
+            int bytesReceived;
+            while ((bytesReceived = recv(responseSocket, buffer, sizeof(buffer), 0)) > 0) {
+                buffer[bytesReceived] = '\0';
+                string data(buffer);
+
+            
+                BondRequest request = BondRequest::deserialize(data);
+
+                //Log confirms
+                request.log();
+            }
+        }
     }
 
     void sendRequests(){
@@ -165,9 +190,6 @@ public:
 
             this_thread::sleep_for(chrono::milliseconds(10)); // delay
         }
-        
-        closesocket(clientSocket);
-		WSACleanup();
     }
 };
 
@@ -345,6 +367,7 @@ public:
     }
 
     void bond() {
+        string confirm;
         while(true){
             unique_lock<mutex> lock(mtx);
             cv.wait(lock, [this] {
@@ -354,12 +377,30 @@ public:
             // bonding
             auto hydrogen1 = hydrogenRequests.back();
             hydrogenRequests.pop_back();
+
+            //Log and send bond confirm
+            hydrogen1.status = "bonded";
+            hydrogen1.log();
+            confirm = hydrogen1.serialize();
+            send(hSocket, confirm.c_str(), confirm.size(), 0);
+
             auto hydrogen2 = hydrogenRequests.back();
             hydrogenRequests.pop_back();
+
+            //Log and send bond confirm
+            hydrogen2.status = "bonded";
+            hydrogen2.log();
+            confirm = hydrogen2.serialize();
+            send(hSocket, confirm.c_str(), confirm.size(), 0);
+
             auto oxygen = oxygenRequests.back();
             oxygenRequests.pop_back();
 
-            cout << "Bonded: " << hydrogen1.id << ", " << hydrogen2.id << ", " << oxygen.id << endl;
+            //Log and send bond confirm
+            oxygen.status = "bonded";
+            oxygen.log();
+            confirm = oxygen.serialize();
+            send(oSocket, confirm.c_str(), confirm.size(), 0);
         } 
     }
 };
@@ -413,10 +454,9 @@ int main() {
 
         Client client(type, inputInt);
         //Run confirmation listener function in another thread
-        thread responseThread(&Client::receiveResponses, client);
-        responseThread.detach();
-        client.sendRequests();
-        while(true); //Block so that the server part can listen
+        thread sendThread(&Client::sendRequests, client);
+        sendThread.detach();
+        client.receiveResponses();
     }
 
     //If server, ask IP and PORT
