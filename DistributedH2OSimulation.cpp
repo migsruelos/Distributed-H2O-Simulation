@@ -19,6 +19,9 @@ string RECEIVING_IP = "127.0.0.2";
 int SENDING_PORT = 27015;
 string SENDING_IP = "127.0.0.1";
 
+//Prevent overlapping cout
+bool printing = false;
+
 // Class to represent a bond request
 class BondRequest {
 public:
@@ -49,7 +52,10 @@ public:
     }
 
     void log(){
+        while(printing);
+        printing = true;
         cout << "(" << id << ", " << status << ", " << timestamp << ")\n";
+        printing = false;
     }
 };
 
